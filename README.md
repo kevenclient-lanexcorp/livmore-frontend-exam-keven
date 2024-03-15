@@ -1,36 +1,165 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+## React Coding Test with GraphQL, Apollo and Hasura
 
-## Getting Started
+### Next.js
 
-First, run the development server:
+Install the dependencies
+
+```bash
+npm install
+```
+
+Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Navigate to `http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Apollo Client in Next.js
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+Install Apollo Client
 
-## Learn More
+```bash
+npm install @apollo/client graphql
+```
 
-To learn more about Next.js, take a look at the following resources:
+Connect to GraphQL server using Apollo Client
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```tsx
+./app/hooks/useApolloClient.tsx
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+import { ApolloClient, InMemoryCache } from '@apollo/client'
 
-## Deploy on Vercel
+export default () => new ApolloClient({
+  uri: 'http://localhost:8080/v1/graphql',
+  cache: new InMemoryCache(),
+})
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Wrap the root component with `ApolloProvider` component
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+```tsx
+app/page.tsx
+
+import { ApolloProvider } from '@apollo/client'
+
+const client = useApolloClient()
+
+return (
+  <ApolloProvider client={client}>
+    <Workspaces/>
+  </ApolloProvider>
+)
+```
+
+### GraphQL Query
+
+Workspaces
+
+```gql
+query(
+  $workspaces_where: workspaces_bool_exp
+) {
+  workspaces(
+    where: $workspaces_where
+    order_by: { name: asc }
+  ) {
+    id
+    name
+    description
+    amenities
+    city {
+      name
+    }
+    area
+    street
+    contact_no
+    email
+    website
+    am
+    pm
+    from
+    to
+    capacity
+    workspace_prices(
+      where: {
+        deleted_at: { _is_null: true }
+      }
+      order_by: { value: desc }
+    ) {
+      id
+      price_type {
+        id
+        name
+        unit
+      }
+      value
+    }
+  }
+}
+```
+
+Result
+
+```gql
+{
+  "data": {
+    "workspaces": [
+      {
+        "id": 1,
+        "name": "Room 1",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Adipiscing commodo elit at imperdiet. Ut consequat semper viverra nam libero justo laoreet sit. Ut etiam sit amet nisl purus in mollis nunc sed. Turpis nunc eget lorem dolor sed viverra ipsum nunc.",
+        "amenities": [
+          "Refreshments",
+          "Smart TV",
+          "Whiteboard"
+        ],
+        "city": {
+          "name": "Pyrmont, Sydney"
+        },
+        "area": "Bondi Junction, Sydney NSW",
+        "street": "33 Bondi Road, Bondi Junction NSW 2000",
+        "contact_no": "+61 02 924 577",
+        "email": "reception@space.com",
+        "website": "www.space.com",
+        "am": true,
+        "pm": true,
+        "from": "09:00:00+00",
+        "to": "18:00:00+00",
+        "capacity": 20,
+        "workspace_prices": [
+          {
+            "id": 1,
+            "price_type": {
+              "id": 1,
+              "name": "All day",
+              "unit": "day"
+            },
+            "value": 40
+          },
+          {
+            "id": 2,
+            "price_type": {
+              "id": 2,
+              "name": "Half day",
+              "unit": "day"
+            },
+            "value": 20
+          },
+          {
+            "id": 3,
+            "price_type": {
+              "id": 3,
+              "name": "Hourly",
+              "unit": "hour"
+            },
+            "value": 10
+          }
+        ]
+      }
+      ...
+    ]
+  }
+}
+```
